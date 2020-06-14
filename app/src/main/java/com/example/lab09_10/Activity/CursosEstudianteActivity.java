@@ -3,14 +3,15 @@ package com.example.lab09_10.Activity;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Canvas;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 
+import com.example.lab09_10.Adapter.CursoAdapter;
 import com.example.lab09_10.Adapter.EstudianteAdapter;
 import com.example.lab09_10.Data.DBAdapterSQL;
 import com.example.lab09_10.Helper.RecyclerItemTouchHelper;
+import com.example.lab09_10.Model.Curso;
 import com.example.lab09_10.Model.Estudiante;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
@@ -25,36 +26,46 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.os.Parcelable;
 import android.view.Menu;
 import android.view.View;
+import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.lab09_10.R;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class EstudianteListActivity extends AppCompatActivity implements RecyclerItemTouchHelper.RecyclerItemTouchHelperListener,
-        EstudianteAdapter.EstudianteListener {
-
+public class CursosEstudianteActivity extends AppCompatActivity implements RecyclerItemTouchHelper.RecyclerItemTouchHelperListener,
+        CursoAdapter.CursoListener{
     private RecyclerView mRecyclerView;
-    private EstudianteAdapter mAdapter;
-    private List<Estudiante> estudianteList;
+    private CursoAdapter mAdapter;
+    private List<Curso> cursoList;
     private SearchView searchView;
     private CoordinatorLayout coordinatorLayout;
     private DBAdapterSQL db;
-
+    private ImageButton matricular;
+    private Estudiante estudiante;
+    private TextView textView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_estudiante_list);
+        setContentView(R.layout.activity_cursos_estudiante);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        //getSupportActionBar().setTitle(getString(R.string.appList));
-        this.coordinatorLayout = findViewById(R.id.coordinator_layout_estudiante);
-        mRecyclerView = findViewById(R.id.recycler_jobAppList);
+        intentInformation();
+        this.coordinatorLayout = findViewById(R.id.coordinator_layout_curso_estudiante);
+        mRecyclerView = findViewById(R.id.recycler_cursoListEstudiante);
         db = DBAdapterSQL.getInstance(this);
-        estudianteList = db.listEstudiantes();
-        mAdapter = new EstudianteAdapter(estudianteList, this);
+        cursoList = db.cursosEstudiante(this.estudiante.getId());
+        if(cursoList.size() == 0){
+            textView = findViewById(R.id.noCursos);
+            textView.setVisibility(View.VISIBLE);
+        }
+        mAdapter = new CursoAdapter(cursoList, this);
         whiteNotificationBar(mRecyclerView);
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
         mRecyclerView.setLayoutManager(mLayoutManager);
@@ -63,59 +74,33 @@ public class EstudianteListActivity extends AppCompatActivity implements Recycle
         mRecyclerView.setAdapter(mAdapter);
         ItemTouchHelper.SimpleCallback itemTouchHelperCallback = new RecyclerItemTouchHelper(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT, this);
         new ItemTouchHelper(itemTouchHelperCallback).attachToRecyclerView(mRecyclerView);
-        FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        matricular = findViewById(R.id.matricular);
+        matricular.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
-                    addEstudiante();
+            public void onClick(View v) {
+                matricularCursos();
             }
         });
-        mAdapter.notifyDataSetChanged();
     }
-
+    public void matricularCursos(){
+        Intent a = new Intent(this, MainActivity.class);
+        a.putExtra("estudiante", estudiante);
+        startActivity(a);
+    }
+    public void intentInformation(){
+        Bundle extras = getIntent().getExtras();
+        if (extras != null) {
+            estudiante = (Estudiante) getIntent().getSerializableExtra("estudiante");
+        }
+    }
     @Override
-    public void onContactSelected(Estudiante estudiante) {
-        Toast.makeText(getApplicationContext(), "Selected: " + estudiante.getNombre() + ", " + estudiante.getApellidos(), Toast.LENGTH_LONG).show();
+    public void onContactSelected(Curso curso) {
+        Toast.makeText(getApplicationContext(), "Selected: " + curso.getDescripcion() ,Toast.LENGTH_LONG).show();
     }
 
     @Override
     public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction, int position) {
-        if (direction == ItemTouchHelper.START) {
-            if (viewHolder instanceof EstudianteAdapter.MyViewHolder) {
-                // get the removed item name to display it in snack bar
-                String name = estudianteList.get(viewHolder.getAdapterPosition()).getNombre();
 
-                // save the index deleted
-                final int deletedIndex = viewHolder.getAdapterPosition();
-                int id = estudianteList.get(deletedIndex).getId();
-                db.deleteEstudiante(id);
-                db.deleteUsuario(id);
-                //db.close();
-                // remove the item from recyclerView
-                mAdapter.removeItem(viewHolder.getAdapterPosition());
-
-                // showing snack bar with Undo option
-                Snackbar snackbar = Snackbar.make(coordinatorLayout, name + " removido!", Snackbar.LENGTH_LONG);
-                snackbar.setAction("UNDO", new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        // undo is selected, restore the deleted item from adapter
-                        mAdapter.restoreItem(deletedIndex);
-                    }
-                });
-                snackbar.setActionTextColor(Color.YELLOW);
-                snackbar.show();
-
-            }
-        } else {
-            Estudiante aux = mAdapter.getSwipedItem(viewHolder.getAdapterPosition());
-            //send data to Edit Activity
-            Intent intent = new Intent(EstudianteListActivity.this, AddEstudianteActivity.class);
-            intent.putExtra("estudiante", aux);
-            intent.putExtra("editable", true);
-            mAdapter.notifyDataSetChanged(); //restart left swipe view
-            startActivity(intent);
-        }
     }
 
     @Override
@@ -166,17 +151,9 @@ public class EstudianteListActivity extends AppCompatActivity implements Recycle
             searchView.setIconified(true);
             return;
         }
-        finish();
         Intent a = new Intent(this, NavDrawerActivity.class);
         a.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(a);
         super.onBackPressed();
     }
-    public void addEstudiante(){
-        //finish();
-        Intent add = new Intent(EstudianteListActivity.this, AddEstudianteActivity.class);
-        add.putExtra("editable", false);
-        startActivity(add);
-    }
-
 }

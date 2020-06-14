@@ -3,14 +3,15 @@ package com.example.lab09_10.Activity;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Canvas;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 
+import com.example.lab09_10.Adapter.CursoAdapter;
 import com.example.lab09_10.Adapter.EstudianteAdapter;
 import com.example.lab09_10.Data.DBAdapterSQL;
 import com.example.lab09_10.Helper.RecyclerItemTouchHelper;
+import com.example.lab09_10.Model.Curso;
 import com.example.lab09_10.Model.Estudiante;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
@@ -33,28 +34,26 @@ import com.example.lab09_10.R;
 
 import java.util.List;
 
-public class EstudianteListActivity extends AppCompatActivity implements RecyclerItemTouchHelper.RecyclerItemTouchHelperListener,
-        EstudianteAdapter.EstudianteListener {
+public class CursoListActivity extends AppCompatActivity implements RecyclerItemTouchHelper.RecyclerItemTouchHelperListener,
+        CursoAdapter.CursoListener{
 
     private RecyclerView mRecyclerView;
-    private EstudianteAdapter mAdapter;
-    private List<Estudiante> estudianteList;
+    private CursoAdapter mAdapter;
+    private List<Curso> cursoList;
     private SearchView searchView;
     private CoordinatorLayout coordinatorLayout;
     private DBAdapterSQL db;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_estudiante_list);
+        setContentView(R.layout.activity_curso_list);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        //getSupportActionBar().setTitle(getString(R.string.appList));
-        this.coordinatorLayout = findViewById(R.id.coordinator_layout_estudiante);
-        mRecyclerView = findViewById(R.id.recycler_jobAppList);
+        this.coordinatorLayout = findViewById(R.id.coordinator_layout_curso);
+        mRecyclerView = findViewById(R.id.recycler_cursoList);
         db = DBAdapterSQL.getInstance(this);
-        estudianteList = db.listEstudiantes();
-        mAdapter = new EstudianteAdapter(estudianteList, this);
+        cursoList = db.listCurso();
+        mAdapter = new CursoAdapter(cursoList, this);
         whiteNotificationBar(mRecyclerView);
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
         mRecyclerView.setLayoutManager(mLayoutManager);
@@ -67,29 +66,29 @@ public class EstudianteListActivity extends AppCompatActivity implements Recycle
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                    addEstudiante();
+                addCurso();
             }
         });
         mAdapter.notifyDataSetChanged();
     }
 
     @Override
-    public void onContactSelected(Estudiante estudiante) {
-        Toast.makeText(getApplicationContext(), "Selected: " + estudiante.getNombre() + ", " + estudiante.getApellidos(), Toast.LENGTH_LONG).show();
+    public void onContactSelected(Curso curso) {
+        Toast.makeText(getApplicationContext(), "Selected: " + curso.getDescripcion() ,Toast.LENGTH_LONG).show();
     }
 
     @Override
     public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction, int position) {
         if (direction == ItemTouchHelper.START) {
-            if (viewHolder instanceof EstudianteAdapter.MyViewHolder) {
+            if (viewHolder instanceof CursoAdapter.MyViewHolder) {
                 // get the removed item name to display it in snack bar
-                String name = estudianteList.get(viewHolder.getAdapterPosition()).getNombre();
+                String name = cursoList.get(viewHolder.getAdapterPosition()).getDescripcion();
 
                 // save the index deleted
                 final int deletedIndex = viewHolder.getAdapterPosition();
-                int id = estudianteList.get(deletedIndex).getId();
-                db.deleteEstudiante(id);
-                db.deleteUsuario(id);
+                int id = cursoList.get(deletedIndex).getId();
+                db.deleteCurso(id);
+                //db.deleteUsuario(id);
                 //db.close();
                 // remove the item from recyclerView
                 mAdapter.removeItem(viewHolder.getAdapterPosition());
@@ -108,10 +107,10 @@ public class EstudianteListActivity extends AppCompatActivity implements Recycle
 
             }
         } else {
-            Estudiante aux = mAdapter.getSwipedItem(viewHolder.getAdapterPosition());
+            Curso aux = mAdapter.getSwipedItem(viewHolder.getAdapterPosition());
             //send data to Edit Activity
-            Intent intent = new Intent(EstudianteListActivity.this, AddEstudianteActivity.class);
-            intent.putExtra("estudiante", aux);
+            Intent intent = new Intent(CursoListActivity.this, AddCursoActivity.class);
+            intent.putExtra("curso", aux);
             intent.putExtra("editable", true);
             mAdapter.notifyDataSetChanged(); //restart left swipe view
             startActivity(intent);
@@ -166,17 +165,14 @@ public class EstudianteListActivity extends AppCompatActivity implements Recycle
             searchView.setIconified(true);
             return;
         }
-        finish();
         Intent a = new Intent(this, NavDrawerActivity.class);
         a.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(a);
         super.onBackPressed();
     }
-    public void addEstudiante(){
-        //finish();
-        Intent add = new Intent(EstudianteListActivity.this, AddEstudianteActivity.class);
+    public void addCurso(){
+        Intent add = new Intent(CursoListActivity.this, AddCursoActivity.class);
         add.putExtra("editable", false);
         startActivity(add);
     }
-
 }

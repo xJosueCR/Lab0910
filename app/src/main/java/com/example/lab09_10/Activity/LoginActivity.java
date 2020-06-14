@@ -8,7 +8,9 @@ import android.app.Activity;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -34,6 +36,7 @@ import com.example.lab09_10.Data.DBAdapterSQL;
 import com.example.lab09_10.Model.Estudiante;
 import com.example.lab09_10.Model.Usuario;
 import com.example.lab09_10.R;
+import com.google.gson.Gson;
 
 import java.io.Serializable;
 
@@ -48,6 +51,7 @@ public class LoginActivity extends AppCompatActivity {
     private UserLoginTask mAuthTask = null;
     private Usuario usuario;
     private DBAdapterSQL db;
+    private SharedPreferences prefs;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -68,6 +72,7 @@ public class LoginActivity extends AppCompatActivity {
                 attemptLogin();
             }
         });
+        prefs = this.getSharedPreferences(getString(R.string.preference_user_key), Context.MODE_PRIVATE);
 
     }
 
@@ -91,7 +96,6 @@ public class LoginActivity extends AppCompatActivity {
         if (cancel) {
             focusView.requestFocus();
         } else {
-
             showProgress(true);
             mAuthTask = new UserLoginTask(user, password);
             mAuthTask.execute((Void) null);
@@ -147,11 +151,12 @@ public class LoginActivity extends AppCompatActivity {
                 //db.insertarUsuario(new Usuario(0,mUser, mPassword, "admin"));
                 //db.insertarEstudiante(new
                       //  Estudiante(0, "207610110", "Josue", "Cespedes",19,null,1));
-               usuario = db.getUsuario(mUser, mPassword);
+              usuario = db.getUsuario(mUser, mPassword);
+              //db.deleteUsuario(13);
                 if (usuario != null) {
                     return true;
                 }
-                //db.close();
+               // db.close();
                 Thread.sleep(2000);
             } catch (Exception e) {
                 return false;
@@ -169,8 +174,13 @@ public class LoginActivity extends AppCompatActivity {
                 finish();
                 Toast.makeText(getApplicationContext(), "Bienvenido", Toast.LENGTH_LONG).show();
                 //putting user on shared preferences
+                SharedPreferences.Editor prefsEditor = prefs.edit();
+                Gson gson = new Gson();
+                String json = gson.toJson(usuario);
+                prefsEditor.putString("usuario", json);
+                prefsEditor.commit();
                 Intent intent = new Intent(LoginActivity.this, NavDrawerActivity.class);
-                intent.putExtra("currentUser", usuario);
+                //intent.putExtra("currentUser", usuario);
                 LoginActivity.this.startActivity(intent);
             } else {
                 passwordEditText.setError("Incorrect password");

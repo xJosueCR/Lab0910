@@ -9,7 +9,18 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".Activity.AddEstudianteActivity"></activity>
+        <activity
+            android:name=".Activity.CursosEstudianteActivity"
+            android:label="@string/title_activity_cursos_estudiante"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
+        <activity android:name=".Activity.AddCursoActivity" />
+        <activity
+            android:name=".Activity.CursoListActivity"
+            android:label="@string/title_activity_add_curso"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".Activity.AddEstudianteActivity"
+            android:label="@string/title_activity_add_estudiante" />
         <activity
             android:name=".Activity.EstudianteListActivity"
             android:label="@string/title_activity_estudiante_list"
@@ -27,7 +38,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".Activity.MainActivity" />
+        <activity android:name=".Activity.MainActivity"
+            android:label="@string/matricula"/>
     </application>
 
 </manifest>

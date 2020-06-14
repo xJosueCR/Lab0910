@@ -1,16 +1,21 @@
 package com.example.lab09_10.Activity;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
 
+import com.example.lab09_10.Data.DBAdapterSQL;
+import com.example.lab09_10.Model.Estudiante;
 import com.example.lab09_10.Model.Usuario;
 import com.example.lab09_10.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.navigation.NavigationView;
+import com.google.gson.Gson;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -27,6 +32,7 @@ public class NavDrawerActivity extends AppCompatActivity implements NavigationVi
 
     private AppBarConfiguration mAppBarConfiguration;
     private Usuario currentUser;
+    private DBAdapterSQL db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +61,7 @@ public class NavDrawerActivity extends AppCompatActivity implements NavigationVi
         drawer.openDrawer(GravityCompat.START);
         this.intentInformation();
         this.userPrivileges();
+        db = DBAdapterSQL.getInstance(this);
     }
 
     @Override
@@ -94,6 +101,14 @@ public class NavDrawerActivity extends AppCompatActivity implements NavigationVi
         } else {
             if (id == R.id.nav_logout) {
                 this.abrirLogin();
+            } else{
+                if(id == R.id.nav_persona){
+                    this.openMisDatos();
+                } else{
+                    if(id == R.id.nav_mis_cursos) {
+                        this.openMisCursos();
+                    }
+                }
             }
         }
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -111,14 +126,26 @@ public class NavDrawerActivity extends AppCompatActivity implements NavigationVi
                 holder.setEnabled(true);
                 holder = menu.findItem(R.id.nav_curso);
                 holder.setEnabled(true);
+                holder = menu.findItem(R.id.nav_persona);
+                holder.setVisible(false);
+                holder = menu.findItem(R.id.nav_mis_cursos);
+                holder.setVisible(false);
                 holder = menu.findItem(R.id.nav_logout);
                 holder.setEnabled(true);
                 break;
             case "estandar":
                 holder = menu.findItem(R.id.nav_estudiante);
-                holder.setEnabled(true);
+                holder.setEnabled(false);
+                holder.setVisible(false);
                 holder = menu.findItem(R.id.nav_curso);
                 holder.setVisible(false);
+                holder.setEnabled(false);
+                holder = menu.findItem(R.id.nav_persona);
+                holder.setVisible(true);
+                holder.setEnabled(true);
+                holder = menu.findItem(R.id.nav_mis_cursos);
+                holder.setVisible(true);
+                holder.setEnabled(true);
                 holder = menu.findItem(R.id.nav_logout);
                 holder.setEnabled(true);
                 break;
@@ -128,10 +155,11 @@ public class NavDrawerActivity extends AppCompatActivity implements NavigationVi
     }
 
     private void intentInformation() {
-        Bundle extras = getIntent().getExtras();
-        if (extras != null) {
-            this.currentUser = (Usuario) getIntent().getSerializableExtra("currentUser");
-        }
+        SharedPreferences prefs = this.getSharedPreferences(getString(R.string.preference_user_key), Context.MODE_PRIVATE);
+        Gson gson = new Gson();
+        String json = prefs.getString("usuario", "");
+        Usuario obj = gson.fromJson(json, Usuario.class);
+        currentUser = obj;
     }
 
     public void abrirLogin() {
@@ -142,13 +170,29 @@ public class NavDrawerActivity extends AppCompatActivity implements NavigationVi
 
     public void abrirMantenimientoCurso() {
         finish();
-       /* Intent a = new Intent(this, AdmCursoActivity.class);
-        startActivity(a);*/
+        Intent a = new Intent(this, CursoListActivity.class);
+        startActivity(a);
     }
 
     public void abrirMantenimientoEstudiante() {
         finish();
         Intent a = new Intent(this, EstudianteListActivity.class);
+        startActivity(a);
+    }
+    public void openMisDatos(){
+        Estudiante estudiante = db.getEstudiante(this.currentUser.getId());
+        finish();
+        Intent a = new Intent(this, AddEstudianteActivity.class);
+        a.putExtra("estudiante", estudiante);
+        a.putExtra("editable", true);
+        a.putExtra("actual", true);
+        startActivity(a);
+    }
+    public void openMisCursos(){
+        Estudiante estudiante = db.getEstudiante(this.currentUser.getId());
+        finish();
+        Intent a = new Intent(this, CursosEstudianteActivity.class);
+        a.putExtra("estudiante", estudiante);
         startActivity(a);
     }
 }
