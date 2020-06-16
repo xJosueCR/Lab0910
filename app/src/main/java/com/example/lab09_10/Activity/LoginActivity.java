@@ -151,7 +151,7 @@ public class LoginActivity extends AppCompatActivity {
                 //db.insertarUsuario(new Usuario(0,mUser, mPassword, "admin"));
                 //db.insertarEstudiante(new
                       //  Estudiante(0, "207610110", "Josue", "Cespedes",19,null,1));
-              usuario = db.getUsuario(mUser, mPassword);
+             usuario = db.getUsuario(mUser, mPassword);
               //db.deleteUsuario(13);
                 if (usuario != null) {
                     return true;

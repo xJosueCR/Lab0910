@@ -1,7 +1,9 @@
 package com.example.lab09_10.Activity;
 
+import android.app.AlertDialog;
 import android.app.SearchManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -25,6 +27,7 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Toast;
@@ -79,33 +82,52 @@ public class EstudianteListActivity extends AppCompatActivity implements Recycle
     }
 
     @Override
-    public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction, int position) {
+    public void onSwiped(final RecyclerView.ViewHolder viewHolder, int direction, int position) {
         if (direction == ItemTouchHelper.START) {
             if (viewHolder instanceof EstudianteAdapter.MyViewHolder) {
                 // get the removed item name to display it in snack bar
-                String name = estudianteList.get(viewHolder.getAdapterPosition()).getNombre();
+                final String name = estudianteList.get(viewHolder.getAdapterPosition()).getNombre();
 
                 // save the index deleted
                 final int deletedIndex = viewHolder.getAdapterPosition();
-                int id = estudianteList.get(deletedIndex).getId();
-                db.deleteEstudiante(id);
-                db.deleteUsuario(id);
-                //db.close();
-                // remove the item from recyclerView
-                mAdapter.removeItem(viewHolder.getAdapterPosition());
+                final int id = estudianteList.get(deletedIndex).getId();
+                if(db.estudianteMatriculado(id)){
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    LayoutInflater layoutInflater = getLayoutInflater();
+                    View view = layoutInflater.inflate(R.layout.layout_estudiante, null);
+                    builder.setView(view)
+                            .setTitle("WARNING")
+                            .setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    mAdapter.notifyDataSetChanged();
+                                }
+                            })
+                            .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    int user = estudianteList.get(deletedIndex).getUser();
+                                    db.deleteUsuario(user);
+                                    db.eliminarCursosEstudiante(id);
+                                    db.deleteEstudiante(id);
+                                    // remove the item from recyclerView
+                                    mAdapter.removeItem(viewHolder.getAdapterPosition());
 
-                // showing snack bar with Undo option
-                Snackbar snackbar = Snackbar.make(coordinatorLayout, name + " removido!", Snackbar.LENGTH_LONG);
-                snackbar.setAction("UNDO", new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        // undo is selected, restore the deleted item from adapter
-                        mAdapter.restoreItem(deletedIndex);
-                    }
-                });
-                snackbar.setActionTextColor(Color.YELLOW);
-                snackbar.show();
-
+                                    // showing snack bar with Undo option
+                                    Snackbar snackbar = Snackbar.make(coordinatorLayout, name + " removido!", Snackbar.LENGTH_LONG);
+                                    snackbar.setAction("UNDO", new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View view) {
+                                            // undo is selected, restore the deleted item from adapter
+                                            mAdapter.restoreItem(deletedIndex);
+                                        }
+                                    });
+                                    snackbar.setActionTextColor(Color.YELLOW);
+                                    snackbar.show();
+                                }
+                            });
+                    builder.show();
+                }
             }
         } else {
             Estudiante aux = mAdapter.getSwipedItem(viewHolder.getAdapterPosition());

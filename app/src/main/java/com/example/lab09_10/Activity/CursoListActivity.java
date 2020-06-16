@@ -1,7 +1,9 @@
 package com.example.lab09_10.Activity;
 
+import android.app.AlertDialog;
 import android.app.SearchManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
@@ -10,6 +12,7 @@ import android.os.Bundle;
 import com.example.lab09_10.Adapter.CursoAdapter;
 import com.example.lab09_10.Adapter.EstudianteAdapter;
 import com.example.lab09_10.Data.DBAdapterSQL;
+import com.example.lab09_10.Dialog.DialogAlert;
 import com.example.lab09_10.Helper.RecyclerItemTouchHelper;
 import com.example.lab09_10.Model.Curso;
 import com.example.lab09_10.Model.Estudiante;
@@ -26,6 +29,7 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Toast;
@@ -35,7 +39,7 @@ import com.example.lab09_10.R;
 import java.util.List;
 
 public class CursoListActivity extends AppCompatActivity implements RecyclerItemTouchHelper.RecyclerItemTouchHelperListener,
-        CursoAdapter.CursoListener{
+        CursoAdapter.CursoListener, DialogAlert.DialogAlertListener{
 
     private RecyclerView mRecyclerView;
     private CursoAdapter mAdapter;
@@ -43,6 +47,8 @@ public class CursoListActivity extends AppCompatActivity implements RecyclerItem
     private SearchView searchView;
     private CoordinatorLayout coordinatorLayout;
     private DBAdapterSQL db;
+    private boolean flag =  false;
+    DialogAlert dialogAlert;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,6 +76,7 @@ public class CursoListActivity extends AppCompatActivity implements RecyclerItem
             }
         });
         mAdapter.notifyDataSetChanged();
+        dialogAlert = new DialogAlert();
     }
 
     @Override
@@ -78,33 +85,69 @@ public class CursoListActivity extends AppCompatActivity implements RecyclerItem
     }
 
     @Override
-    public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction, int position) {
+    public void onSwiped(final RecyclerView.ViewHolder viewHolder, int direction, int position) {
         if (direction == ItemTouchHelper.START) {
             if (viewHolder instanceof CursoAdapter.MyViewHolder) {
                 // get the removed item name to display it in snack bar
-                String name = cursoList.get(viewHolder.getAdapterPosition()).getDescripcion();
+                //revisar si el curso tiene estudiantes
+                final String name = cursoList.get(viewHolder.getAdapterPosition()).getDescripcion();
 
                 // save the index deleted
                 final int deletedIndex = viewHolder.getAdapterPosition();
-                int id = cursoList.get(deletedIndex).getId();
-                db.deleteCurso(id);
-                //db.deleteUsuario(id);
-                //db.close();
-                // remove the item from recyclerView
-                mAdapter.removeItem(viewHolder.getAdapterPosition());
+                final int id = cursoList.get(deletedIndex).getId();
+                if (db.estudianteEnCurso(id)) {
+                   // dialogAlert.show(getSupportFragmentManager(), "dialog alert");
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    LayoutInflater layoutInflater = getLayoutInflater();
+                    View view = layoutInflater.inflate(R.layout.layout_dialog, null);
 
-                // showing snack bar with Undo option
-                Snackbar snackbar = Snackbar.make(coordinatorLayout, name + " removido!", Snackbar.LENGTH_LONG);
-                snackbar.setAction("UNDO", new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        // undo is selected, restore the deleted item from adapter
-                        mAdapter.restoreItem(deletedIndex);
-                    }
-                });
-                snackbar.setActionTextColor(Color.YELLOW);
-                snackbar.show();
+                    builder.setView(view)
+                            .setTitle("WARNING")
+                            .setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    mAdapter.notifyDataSetChanged();
+                                }
+                            })
+                            .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    db.deleteCurso(id);
+                                    db.deleteCursosMatriculados(id);
+                                    mAdapter.removeItem(viewHolder.getAdapterPosition());
 
+                                    // showing snack bar with Undo option
+                                    Snackbar snackbar = Snackbar.make(coordinatorLayout, name + " removido!", Snackbar.LENGTH_LONG);
+                                    snackbar.setAction("UNDO", new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View view) {
+                                            // undo is selected, restore the deleted item from adapter
+                                            mAdapter.restoreItem(deletedIndex);
+                                        }
+                                    });
+                                    snackbar.setActionTextColor(Color.YELLOW);
+                                    snackbar.show();
+                                }
+                            });
+                    builder.show();
+                } else {
+                    db.deleteCurso(id);
+                    db.deleteCursosMatriculados(id);
+                    mAdapter.removeItem(viewHolder.getAdapterPosition());
+
+                    // showing snack bar with Undo option
+                    Snackbar snackbar = Snackbar.make(coordinatorLayout, name + " removido!", Snackbar.LENGTH_LONG);
+                    snackbar.setAction("UNDO", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            // undo is selected, restore the deleted item from adapter
+                            mAdapter.restoreItem(deletedIndex);
+                        }
+                    });
+                    snackbar.setActionTextColor(Color.YELLOW);
+                    snackbar.show();
+
+                }
             }
         } else {
             Curso aux = mAdapter.getSwipedItem(viewHolder.getAdapterPosition());
@@ -174,5 +217,12 @@ public class CursoListActivity extends AppCompatActivity implements RecyclerItem
         Intent add = new Intent(CursoListActivity.this, AddCursoActivity.class);
         add.putExtra("editable", false);
         startActivity(add);
+    }
+    public void openDialog(){
+
+    }
+    @Override
+    public void actionConfirmed() {
+            flag = true;
     }
 }

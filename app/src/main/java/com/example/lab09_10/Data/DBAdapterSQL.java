@@ -63,7 +63,7 @@ public class DBAdapterSQL extends SQLiteOpenHelper{
             db.execSQL(estudianteTable);
             db.execSQL(cursoTable);
             db.execSQL(cursosEstudiante);
-            db.execSQL(orden);
+            //db.execSQL(orden);
            // db.execSQL(orden);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -378,8 +378,61 @@ public class DBAdapterSQL extends SQLiteOpenHelper{
     public boolean eliminarCursosEstudiante(int estudiante){
         db.beginTransaction();
         db  = this.getWritableDatabase();
+
         try{
             String orden = "delete from cursosEstudiante where idEstudiante=" + estudiante;
+            db.execSQL(orden);
+            db.setTransactionSuccessful();
+            return true;
+        }catch (Exception ex){
+            ex.printStackTrace();
+            return false;
+        }finally {
+            db.endTransaction();
+        }
+    }
+    public boolean estudianteEnCurso(int curso){
+        db.beginTransaction();
+        db  = this.getWritableDatabase();
+        Cursor c;
+        try{
+            String orden = "select * from cursosEstudiante where idCurso=" + curso;
+            c = db.rawQuery(orden, null);
+            if(c.moveToFirst()){
+                return true;
+            }
+            return false;
+        }catch (Exception ex){
+            ex.printStackTrace();
+            return false;
+        }finally {
+            db.endTransaction();
+        }
+    }
+    public boolean estudianteMatriculado(int estudiante){
+        db.beginTransaction();
+        db  = this.getWritableDatabase();
+        Cursor c;
+        try{
+            String orden = "select * from cursosEstudiante where idEstudiante=" + estudiante;
+            c = db.rawQuery(orden, null);
+            if(c.moveToFirst()){
+                return true;
+            }
+            return false;
+        }catch (Exception ex){
+            ex.printStackTrace();
+            return false;
+        }finally {
+            db.endTransaction();
+        }
+    }
+    public boolean deleteCursosMatriculados(int curso){
+        db.beginTransaction();
+        db  = this.getWritableDatabase();
+        Cursor c;
+        try{
+            String orden = "delete from cursosEstudiante where idCurso=" + curso;
             db.execSQL(orden);
             db.setTransactionSuccessful();
             return true;
